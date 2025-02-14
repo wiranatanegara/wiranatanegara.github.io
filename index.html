@@ -59,6 +59,12 @@
             text-align: left;
             color: #64ffda;
             overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .highlight {
+            background-color: yellow;
+            color: black;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -86,21 +92,47 @@
         function processResi() {
             let input = document.getElementById("inputResi").value;
             let matches = [...input.matchAll(/(?:REFF NO|NO REF\.|NO RESI)\s*:\s*(\d+)/gi)];
-            let result = matches.length ? matches.map(m => m[1]).join("\n") : "Tidak ada nomor referensi ditemukan";
-            document.getElementById("outputResi").textContent = result;
+            let result = matches.map(m => m[1]);
+            
+            if (result.length === 0) {
+                document.getElementById("outputResi").textContent = "Tidak ada nomor referensi ditemukan";
+                return;
+            }
+            
+            let formattedResult = "";
+            for (let i = 0; i < result.length; i++) {
+                formattedResult += result[i] + " ";
+                if ((i + 1) % 12 === 0) {
+                    formattedResult += "\n";
+                }
+            }
+            
+            document.getElementById("outputResi").textContent = formattedResult.trim();
+            document.getElementById("input1").value = formattedResult.trim();
         }
 
         function compareData() {
-            let input1 = document.getElementById("input1").value.split("\n").map(x => x.trim()).filter(Boolean);
-            let input2 = document.getElementById("input2").value.split("\n").map(x => x.trim()).filter(Boolean);
+            let input1 = document.getElementById("input1").value.split(/\s+/).map(x => x.trim()).filter(Boolean);
+            let input2 = document.getElementById("input2").value.split(/\s+/).map(x => x.trim()).filter(Boolean);
             let set1 = new Set(input1);
             let result = input2.filter(num => !set1.has(num));
             document.getElementById("outputCompare").textContent = result.length ? result.join("\n") : "Tidak ada perbedaan";
+            highlightMatchingNumbers();
+        }
+
+        function highlightMatchingNumbers() {
+            let outputResi = document.getElementById("outputResi");
+            let outputCompare = document.getElementById("outputCompare").textContent.split("\n").map(x => x.trim()).filter(Boolean);
+            let highlightedText = outputResi.textContent.split(/\s+/).map(num => 
+                outputCompare.includes(num) ? `<span class='highlight'>${num}</span>` : num
+            ).join(" ");
+            outputResi.innerHTML = highlightedText.replace(/(.{40,}?) /g, "$1\n");
         }
 
         function copyOutput(id) {
-            let outputText = document.getElementById(id).textContent;
-            navigator.clipboard.writeText(outputText).then(() => {
+            let outputElement = document.getElementById(id);
+            let text = outputElement.innerText;
+            navigator.clipboard.writeText(text).then(() => {
                 alert("Teks berhasil disalin!");
             }).catch(() => {
                 alert("Gagal menyalin teks");
